@@ -15,5 +15,9 @@ kotlin {
         runTask?.standardInput = System.`in`
       }
     }
+
+    compilations["main"].cinterops {
+      create("libmicrohttpd")
+    }
   }
 }
