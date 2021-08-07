@@ -11,7 +11,7 @@ A simple proof of concept of Kotlin/Native app with a web server inside (C inter
 ## Requirements
 
 * This is a gradle project with wrapper included, so you only need installed JRE for gradle to be able to run tasks
-* Download, build and install [libmicrohttpd](https://www.gnu.org/software/libmicrohttpd/). Instruction in [here](https://github.com/ulion/libmicrohttpd/blob/master/INSTALL). I've used only `./configure; make; make install` without any flags or manual configuration.
+* Download, build and install [libmicrohttpd](https://www.gnu.org/software/libmicrohttpd/). Instruction is [here](https://github.com/ulion/libmicrohttpd/blob/master/INSTALL). I've used only `./configure; make; make install` without any flags or manual configuration.
 
 ## Build
 
