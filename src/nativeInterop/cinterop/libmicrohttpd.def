@@ -1,5 +1,5 @@
 headers = microhttpd.h
 headerFilter = microhttpd.h
-
 compilerOpts = -I/usr/local/include
-linkerOpts = -L/usr/local/lib -lmicrohttpd
+staticLibraries = libmicrohttpd.a
+libraryPaths = /usr/local/lib
