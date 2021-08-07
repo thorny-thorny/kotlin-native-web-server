@@ -19,5 +19,13 @@ kotlin {
     compilations["main"].cinterops {
       create("libmicrohttpd")
     }
+
+    sourceSets {
+      commonMain {
+        dependencies {
+          implementation(kotlin("stdlib-common"))
+        }
+      }
+    }
   }
 }

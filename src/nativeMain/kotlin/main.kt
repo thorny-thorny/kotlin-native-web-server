@@ -1,41 +1,51 @@
-import kotlinx.cinterop.*
-import libmicrohttpd.*
-
-val handleRequest: MHD_AccessHandlerCallback? = staticCFunction { cls, connection, url, method, version, upload_data, upload_data_size, con_cls ->
-  // Handler runs in a not-main thread, so this is required otherwise memory allocation goes nuts https://youtrack.jetbrains.com/issue/KT-44283
-  initRuntimeIfNeeded()
-
-  // I guess it's required to handle String.cstr memory leak and other code just in case
-  memScoped {
-    println("Handling request ${method?.toKString() ?: "-"} ${url?.toKString() ?: "-"}")
-
-    val body = "<html><body>Hello, browser!</body></html>"
-
-    // MHD_RESPMEM_MUST_COPY works here. For MHD_RESPMEM_PERSISTENT it responds with random string from memory on the first request
-    // Might be because body bytes got freed before the end of the lambda
-    val response = MHD_create_response_from_buffer(body.length.toULong(), body.cstr, MHD_ResponseMemoryMode.MHD_RESPMEM_MUST_COPY)
-    MHD_add_response_header(response, "Content-Type", "text/html; charset=UTF-8")
-
-    val ret = MHD_queue_response(connection, MHD_HTTP_OK, response)
-
-    MHD_destroy_response(response)
-
-    ret
-  }
-}
+import me.thorny.webserver.ResponseBuilder
+import kotlin.native.concurrent.AtomicInt
 
 fun main() {
   val port: UShort = 8888u
-  val daemon = MHD_start_daemon(MHD_USE_INTERNAL_POLLING_THREAD, port, null, null, handleRequest, null, MHD_OPTION_END)
-  if (daemon == null) {
-    println("Failed to start daemon")
-    return
+  val server = MicroHttpDWebServer(AtomicInt(0)) { ctx, request ->
+    // This lambda runs on global thread, and it must not capture any local variable! https://kotlinlang.org/api/latest/jvm/stdlib/kotlinx.cinterop/static-c-function.html
+    // You can use ctx argument tho (It better be atomic or might get frozen)
+    println("Handling request ${request.method} ${request.url}")
+
+    val isGet = request.method.uppercase() == "GET" // Ignore other methods for stats
+    val isFaviconRequest = request.url.lowercase() == "/favicon.ico" // Ignore these for stats
+
+    val numberOfRequests = if (isGet && !isFaviconRequest) ctx.addAndGet(1) else ctx.value
+
+    ResponseBuilder.build {
+      if (isGet && !isFaviconRequest && request.url != "/404") {
+        status = 202u
+        contentType = "text/html; charset=UTF-8"
+        body = """
+          <html>
+            <body>
+              <h3>Hello!</h3>
+              <p>You've visited url <b>${request.url}</b></p>
+              <p>Total number of requests made: <b>$numberOfRequests</b></p>
+              <br />
+              <p>Links:</p>
+              <ul>
+                <li><a href="https://www.gnu.org/software/libmicrohttpd/">libmicrohttpd</a></li>
+                <li><a href="https://github.com/thorny-thorny/kotlin-native-web-server">Project page @ github</a></li>
+              </ul>
+            </body>
+          </html>
+        """.trimIndent()
+      } else {
+        status = 404u
+      }
+    }
   }
 
-  println("Daemon started, listening port $port")
+  server.start(port)
+  println("Server is listening port $port")
   println("Press enter to stop")
+
+  // You can start more servers on different ports here
+  // It should work as long as they all are created/started/stopped on the same thread
 
   readLine()
 
-  MHD_stop_daemon(daemon)
+  server.stop()
 }
