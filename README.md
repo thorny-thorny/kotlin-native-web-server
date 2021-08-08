@@ -1,14 +1,14 @@
 # Kotlin/Native web server
 
-A simple proof of concept of Kotlin/Native app with a web server inside (C interop for [libmicrohttpd](https://www.gnu.org/software/libmicrohttpd/))
+A simple proof of concept of Kotlin/Native app with a web server inside (C interop for [libmicrohttpd](https://www.gnu.org/software/libmicrohttpd/)). Libmicrohttpd is linked statically so the output executable file shouldn't require any external dependency.
 
 ## Status
 
 * MacOS: ✅
-* Linux: TODO
+* Linux: ✅
 * Windows: TODO
 
-## Requirements
+## Build requirements
 
 * This is a gradle project with wrapper included, so you only need installed JRE for gradle to be able to run tasks
 * Download, build and install [libmicrohttpd](https://www.gnu.org/software/libmicrohttpd/). Instruction is [here](https://github.com/ulion/libmicrohttpd/blob/master/INSTALL). I've used only `./configure; make; make install` without any flags or manual configuration.
@@ -25,7 +25,7 @@ After installing all requirements:
 
 ## Run
 
-After building run `./build/bin/native/releaseExecutable/kotlin-native-web-server.kexe` (for MacOS). Output:
+After building run `./build/bin/native/releaseExecutable/kotlin-native-web-server.kexe` (or whatever executable file is inside). Output:
 ```
 Server is listening port 8888
 Press enter to stop
