@@ -1,9 +1,9 @@
 headers = microhttpd.h
 headerFilter = microhttpd.h
 compilerOpts.linux = -I/usr/local/include
-compilerOpts.macos = -I/usr/local/include
+compilerOpts.osx = -I/usr/local/include
 compilerOpts.mingw = -IC:/msys64/mingw64/include
 libraryPaths.linux = /usr/local/lib
-libraryPaths.macos = /usr/local/lib
+libraryPaths.osx = /usr/local/lib
 libraryPaths.mingw = C:/msys64/mingw64/lib
 staticLibraries = libmicrohttpd.a
