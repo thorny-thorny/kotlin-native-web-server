@@ -15,7 +15,7 @@ fun main() {
 
     ResponseBuilder.build {
       if (isGet && !isFaviconRequest && request.url != "/404") {
-        status = 202u
+        status = 200u
         contentType = "text/html; charset=UTF-8"
         body = """
           <html>

@@ -1,7 +1,6 @@
 import kotlinx.cinterop.*
 import libmicrohttpd.*
 import me.thorny.webserver.*
-import platform.posix.*
 import kotlin.native.concurrent.AtomicReference
 import kotlin.native.concurrent.freeze
 
@@ -10,7 +9,9 @@ import kotlin.native.concurrent.freeze
 // TODO: try to pass context and handler via cls arg of MHD_AccessHandlerCallback
 val contextMap = AtomicReference(mapOf<String, Any>().freeze())
 val handlerMap = AtomicReference(mapOf<String, RequestHandler<Any?>>().freeze())
-// val mapsMutex = platform.posix.malloc(sizeOf<pthread_mutex_tVar>().toULong()) as CPointer<pthread_mutex_tVar>? ?: throw Error("Failed to allocate memory for mutex")
+
+@SharedImmutable
+val mapsMutex = Mutex()
 
 val handleRequest: MHD_AccessHandlerCallback? = staticCFunction { cls, connection, url, method, version, upload_data, upload_data_size, con_cls ->
   // Handler runs in a not-main thread, so this is required otherwise String.cstr crashes https://youtrack.jetbrains.com/issue/KT-44283
@@ -23,12 +24,12 @@ val handleRequest: MHD_AccessHandlerCallback? = staticCFunction { cls, connectio
       try {
         val id = (cls as CPointer<ByteVar>?)?.toKString() ?: throw Error("No id passed")
 
-        // pthread_mutex_lock(mapsMutex)
+        mapsMutex.lock()
 
         val handlerContext = contextMap.value[id]
         val handler = handlerMap.value[id]
 
-        // pthread_mutex_unlock(mapsMutex)
+        mapsMutex.unlock()
 
         if (handler == null || method == null || url == null) {
           throw Error("No essential data passed")
@@ -74,15 +75,9 @@ class MicroHttpDWebServer<CtxType: Any?>(
   private var daemon: CPointer<cnames.structs.MHD_Daemon>? = null
   private val id = randomString(10)
   private var cid: CPointer<ByteVar>? = null
-  private var didInit = false
   private val arena = Arena()
 
   override fun startSafe(port: UShort) {
-    if (!didInit) {
-      // pthread_mutex_init(mapsMutex, null)
-      didInit = true
-    }
-
     cid = id.cstr.getPointer(arena)
 
     val daemon = MHD_start_daemon(MHD_USE_INTERNAL_POLLING_THREAD, port, null, null, handleRequest, cid, MHD_OPTION_END)
@@ -90,7 +85,7 @@ class MicroHttpDWebServer<CtxType: Any?>(
       throw Error("Failed to start libmicrohttpd daemon on port $port")
     }
 
-    // pthread_mutex_lock(mapsMutex)
+    mapsMutex.lock()
 
     if (handlerContext != null) {
       contextMap.value = contextMap.value.mutateFrozenCopy {
@@ -102,14 +97,14 @@ class MicroHttpDWebServer<CtxType: Any?>(
       this[id] = handler as RequestHandler<Any?> /* = (kotlin.Any?, me.thorny.webserver.Request) -> me.thorny.webserver.Response */
     }
 
-    // pthread_mutex_unlock(mapsMutex)
+    mapsMutex.unlock()
   }
 
   override fun stopSafe() {
     cid = null
     arena.clear()
 
-    // pthread_mutex_lock(mapsMutex)
+    mapsMutex.lock()
 
     contextMap.value = contextMap.value.mutateFrozenCopy {
       remove(id)
@@ -118,7 +113,7 @@ class MicroHttpDWebServer<CtxType: Any?>(
       remove(id)
     }
 
-    // pthread_mutex_unlock(mapsMutex)
+    mapsMutex.unlock()
 
     MHD_stop_daemon(daemon)
   }

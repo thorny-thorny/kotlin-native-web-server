@@ -12,7 +12,7 @@ kotlin {
   val nativeTarget = when {
     hostOs == "Mac OS X" -> macosX64("native")
     hostOs == "Linux" -> linuxX64("native")
-    isMingwX64 -> mingwX64("native") 
+    isMingwX64 -> mingwX64("native")
     else -> throw GradleException("Host OS \"$hostOs\" is not supported (supported: MacOS, Linux, Windows; 64bit only)")
   }
 
@@ -32,10 +32,20 @@ kotlin {
     }
 
     sourceSets {
-      commonMain {
+      val commonMain by getting {
         dependencies {
           implementation(kotlin("stdlib-common"))
         }
+      }
+
+      val nixMain by creating {
+      }
+
+      val mingwMain by creating {
+      }
+
+      val nativeMain by getting {
+        dependsOn(if (isMingwX64) mingwMain else nixMain)
       }
     }
   }
