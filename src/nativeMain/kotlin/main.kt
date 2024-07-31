@@ -1,8 +1,11 @@
 import me.thorny.webserver.ResponseBuilder
 import kotlin.native.concurrent.AtomicInt
 
-fun main() {
-  val port: UShort = 8888u
+fun main(args: Array<String>) {
+  val isDaemon = "-d" in args;
+  val portFlagIndex = args.indexOf("-p").let { if (it < 0) null else it }
+  val port = portFlagIndex?.let { args.getOrNull(it + 1)?.toUShortOrNull() } ?: 8080u
+
   val server = MicroHttpDWebServer(AtomicInt(0)) { ctx, request ->
     // This lambda runs on global thread, and it must not capture any local variable! https://kotlinlang.org/api/latest/jvm/stdlib/kotlinx.cinterop/static-c-function.html
     // You can use ctx argument tho (It better be atomic or might get frozen)
@@ -40,12 +43,18 @@ fun main() {
 
   server.start(port)
   println("Server is listening port $port")
-  println("Press enter to stop")
 
   // You can start more servers on different ports here
   // It should work as long as they all are created/started/stopped on the same thread
 
-  readLine()
-
+  if (isDaemon) {
+    // readLine returns null immediately when running inside Docker so wait for signals instead 
+    suspendUntilTerminated()
+  } else {
+    println("Press enter to stop")
+    readLine()
+  }
+  
   server.stop()
+  println("Server stopped")
 }
