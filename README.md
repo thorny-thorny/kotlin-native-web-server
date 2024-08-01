@@ -1,5 +1,8 @@
 # Kotlin/Native web server
 
+> [!WARNING]  
+> This project is based on Kotlin 1.5 released in 2021, do not take it as an example of modern Kotlin/Native features
+
 A simple proof of concept of Kotlin/Native app with a web server inside (C interop for [libmicrohttpd](https://www.gnu.org/software/libmicrohttpd/)). Libmicrohttpd is linked statically so the output executable file shouldn't require any external dependency. I've discovered more complex example of libmicrohttpd+Kotlin/Native project [here](https://github.com/Kotlin/kotlinconf-spinner/blob/master/httpserver/src/hostMain/kotlin/server/HttpServer.kt).
 
 ## Status
